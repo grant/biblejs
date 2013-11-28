@@ -30,6 +30,14 @@
 		// Private fields
 		//
 
+		// The level of the bible part
+		var LEVEL = {
+			BIBLE: 'BIBLE',
+			BOOK: 'BOOK',
+			CHAPTER: 'CHAPTER',
+			VERSE: 'VERSE'
+		};
+
 		var bibleObject; // BiblePart
 
 		//
@@ -62,7 +70,7 @@
 		 */
 		Bible.load = function (callback) {
 			$.getJSON(BIBLE_URL, function (bible) {
-				bibleObject = new BiblePart(bible);
+				bibleObject = new BiblePart(bible, LEVEL.BIBLE);
 				if (typeof callback === 'function') {
 					callback();
 				}
@@ -104,7 +112,7 @@
 			if (!query) {
 				return Bible.getBibleObject();
 			} else {
-				getQueryResult(query);
+				return bibleObject.get(query);
 			}
 		}
 
@@ -135,20 +143,65 @@
 		// Public Methods (BiblePart)
 		//
 
-		var BiblePart = function(part) {
+		/**
+		 * A part of the bible
+		 * @param {Object} part The part that this references
+		 * @param {LEVEL} level The scope that this object entails
+		 * @returns {BiblePart}
+		 */
+		var BiblePart = function(part, level) {
 			this.part = part;
+			this.level = level;
 		};
 
 		BiblePart.prototype = {
-			list: function() {
-				for (var i in this.part) {
-					//
+			get: function(param) {
+				if (!param) {
+					return this.part;
+				} else {
+					var query = param.toUpperCase();
+					return new BiblePart(this.part[query], getLowerLevel(this.level));
 				}
 			},
-			count: function() {
-				return this.part.length;
+			list: function() {
+				return Object.keys(this.part);
+			},
+			length: function() {
+				return Object.keys(this.part).length;
 			}
 		};
+
+		//
+		// Private Methods (BiblePart)
+		//
+
+		/**
+		 * Gets the next lower level
+		 * @param {LEVEL} level The current level
+		 * @returns {LEVEL} The next lower level
+		 */
+		function getLowerLevel (level) {
+			switch (level) {
+				case LEVEL.BIBLE: return LEVEL.BOOK;
+				case LEVEL.BOOK: return LEVEL.CHAPTER;
+				case LEVEL.CHAPTER: return LEVEL.VERSE;
+				default: return undefined;
+			}
+		}
+
+		/**
+		 * Gets the next higher level
+		 * @param {LEVEL} level The current level
+		 * @returns {LEVEL} The next higher level
+		 */
+		function getHigherLevel (level) {
+			switch (level) {
+				case LEVEL.BOOK: return LEVEL.BIBLE;
+				case LEVEL.CHAPTER: return LEVEL.BOOK;
+				case LEVEL.VERSE: return LEVEL.CHAPTER;
+				default: return undefined;
+			}
+		}
 
 
 		// Expose Bible
@@ -160,8 +213,6 @@ function run() {
 	console.log(Bible('Genesis 1:1'));
 	console.log("console.log(Bible('Genesis 1'))");
 	console.log(Bible('Genesis 1'));
-	console.log("console.log(Bible.getBibleObject())");
-	console.log(Bible.getBibleObject());
 	console.log("console.log(Bible.find('God'))");
 	console.log(Bible.find('God'));
 	console.log("console.log(Bible.find('God', 20))");
@@ -176,5 +227,5 @@ function run() {
 // Bible(run);
 
 Bible(function() {
-	console.log(Bible.get());
+
 });
