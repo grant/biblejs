@@ -123,10 +123,19 @@
 		}
 
 		// Errors
-
 		function throwBibleNotLoadedError () {
 			throw Error('Bible not loaded');
 		}
+
+		//
+		// BibleIndex
+		//
+
+		var BibleIndex = function(book, chapter, verse) {
+			this.book = book;
+			this.chapter = chapter;
+			this.verse = verse;
+		};
 
 		//
 		// Public Methods (BiblePart)
@@ -135,12 +144,13 @@
 		/**
 		 * A part of the bible
 		 * @param {Object} part The part that this references
-		 * @param {LEVEL} level The scope that this object entails
+		 * @param {BibleIndex} bibleIndex The index of the bible this part is referencing
 		 * @returns {BiblePart}
 		 */
-		var BiblePart = function(part, level) {
+		var BiblePart = function(part, bibleIndex) {
 			this.part = part;
-			this.level = level;
+			this.bibleIndex = bibleIndex;
+			this.level = getLevel(bibleIndex);
 
 			/**
 			 * Gets the result from a query
@@ -149,16 +159,17 @@
 			 */
 			this.getResult = function (query) {
 				var newPart;
-				var newLevel = getLowerLevel(this.level);
+
+				var book, chapter, verse;
 				if (stringHasNumbers(query)) {
 					query = query.trim();
 					var stringParts = query.split(' ');
 					var lastPart = stringParts[stringParts.length - 1];
 					var colonSplit = lastPart.split(':');
 
-					var book = query.substring(0, query.length - lastPart.length - 1).toUpperCase();
-					var chapter = colonSplit[0].toUpperCase();
-					var verse;
+					book = query.substring(0, query.length - lastPart.length - 1).toUpperCase();
+					chapter = colonSplit[0].toUpperCase();
+					verse;
 					if (colonSplit.length > 1) {
 						verse = colonSplit[1].toUpperCase();
 					}
@@ -166,37 +177,78 @@
 					// Handle the 3 cases
 					if (!!book && !!chapter && !!verse) {
 						newPart = this.part[book][chapter][verse];
-						newLevel = getLowerLevel(newLevel);
-						newLevel = getLowerLevel(newLevel);
 					} else if (!!book && !!chapter) {
 						newPart = this.part[book][chapter];
-						newLevel = getLowerLevel(newLevel);
 					} else if (!!chapter && !!verse) {
 						newPart = this.part[chapter][verse];
-						newLevel = getLowerLevel(newLevel);
 					}
 				} else {// String doesn't have string numbers
 					var key;
+					book = this.bibleIndex.book;
+					chapter = this.bibleIndex.chapter;
+					verse = this.bibleIndex.verse;
+
 					if (typeof query !== 'number') { // Clean up string if not a number
 						key = query.trim().toUpperCase();
+						// Update the level and bible index
+						switch (this.level) {
+							case LEVEL.BIBLE:
+								book = key;
+								break;
+							case LEVEL.BOOK:
+								chapter = key;
+								break;
+							case LEVEL.CHAPTER:
+								verse = key;
+								break;
+						}
 					} else { // query is a number
 						if (this.level === LEVEL.BIBLE) { // Get the right number book of the bible
-							key = BOOK_ORDER[query - 1];
+							var newBook = BOOK_ORDER[query - 1];
+							key = newBook;
+							// Update the level and bible index
+							book = newBook;
 						} else { // handle the number like a normal key
 							key = query + '';
+							// Update the level and bible index
+							switch (this.level) {
+								case LEVEL.BOOK:
+									chapter = key;
+									break;
+								case LEVEL.CHAPTER:
+									verse = key;
+									break;
+							}
 						}
 					}
 					newPart = this.part[key];
 				}
-				return new BiblePart(newPart, newLevel);
+				return new BiblePart(newPart, new BibleIndex(book, chapter, verse));
 			};
 		};
 
+		/**
+		 * Gets the index level at a certain bible index
+		 * @param {BibleIndex} bibleIndex The bible index to test
+		 * @returns {Level} The corresponding level
+		 */
+		function getLevel (bibleIndex) {
+			if (!!bibleIndex.verse) {
+				return LEVEL.VERSE;
+			} else if (!!bibleIndex.chapter) {
+				return LEVEL.CHAPTER;
+			} else if (!!bibleIndex.book) {
+				return LEVEL.BOOK;
+			} else {
+				return LEVEL.BIBLE;
+			}
+		}
+
 		BiblePart.prototype = {
 			get: function(param) {
-				if (!param) {
+				if (!param) { // Get the object literal if no params passed
 					return this.part;
-				} else {
+				} else { // Else query like normal
 					return this.getResult(param);
 				}
 			},
@@ -205,41 +257,11 @@
 			},
 			length: function() {
 				return Object.keys(this.part).length;
+			},
+			find: function() {
+
 			}
 		};
-
-		//
-		// Private Methods (BiblePart)
-		//
-
-		/**
-		 * Gets the next lower level
-		 * @param {LEVEL} level The current level
-		 * @returns {LEVEL} The next lower level
-		 */
-		function getLowerLevel (level) {
-			switch (level) {
-				case LEVEL.BIBLE: return LEVEL.BOOK;
-				case LEVEL.BOOK: return LEVEL.CHAPTER;
-				case LEVEL.CHAPTER: return LEVEL.VERSE;
-				default: return undefined;
-			}
-		}
-
-		/**
-		 * Gets the next higher level
-		 * @param {LEVEL} level The current level
-		 * @returns {LEVEL} The next higher level
-		 */
-		function getHigherLevel (level) {
-			switch (level) {
-				case LEVEL.BOOK: return LEVEL.BIBLE;
-				case LEVEL.CHAPTER: return LEVEL.BOOK;
-				case LEVEL.VERSE: return LEVEL.CHAPTER;
-				default: return undefined;
-			}
-		}
-
 
 		// Expose Bible
 		window.Bible = Bible;
