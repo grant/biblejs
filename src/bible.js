@@ -38,6 +38,9 @@
 			VERSE: 'VERSE'
 		};
 
+		// Book order is scraped off of the bible json
+		var BOOK_ORDER = ["GENESIS", "EXODUS", "LEVITICUS", "NUMBERS", "DEUTERONOMY", "THE BOOK OF JOSHUA", "THE BOOK OF JUDGES", "THE BOOK OF RUTH", "THE FIRST BOOK OF THE KINGS", "THE SECOND BOOK OF THE KINGS", "THE THIRD BOOK OF THE KINGS", "THE FOURTH BOOK OF THE KINGS", "THE FIRST BOOK OF THE CHRONICLES", "THE SECOND BOOK OF THE CHRONICLES", "EZRA", "THE BOOK OF NEHEMIAH", "THE BOOK OF ESTHER", "THE BOOK OF JOB", "THE BOOK OF PSALMS", "THE PROVERBS", "ECCLESIASTES", "THE SONG OF SOLOMON", "THE BOOK OF THE PROPHET ISAIAH", "THE BOOK OF THE PROPHET JEREMIAH", "THE LAMENTATIONS OF JEREMIAH", "THE BOOK OF THE PROPHET EZEKIEL", "THE BOOK OF DANIEL", "HOSEA", "JOEL", "AMOS", "OBADIAH", "JONAH", "MICAH", "NAHUM", "HABAKKUK", "ZEPHANIAH", "HAGGAI", "ZECHARIAH", "MALACHI", "THE GOSPEL ACCORDING TO SAINT MATTHEW", "THE GOSPEL ACCORDING TO SAINT MARK", "THE GOSPEL ACCORDING TO SAINT LUKE", "THE GOSPEL ACCORDING TO SAINT JOHN", "THE ACTS OF THE APOSTLES", "THE EPISTLE OF PAUL THE APOSTLE TO THE ROMANS", "THE FIRST EPISTLE OF PAUL THE APOSTLE TO THE CORINTHIANS", "THE SECOND EPISTLE OF PAUL THE APOSTLE TO THE CORINTHIANS", "THE EPISTLE OF PAUL THE APOSTLE TO THE GALATIANS", "THE EPISTLE OF PAUL THE APOSTLE TO THE EPHESIANS", "THE EPISTLE OF PAUL THE APOSTLE TO THE PHILIPPIANS", "THE EPISTLE OF PAUL THE APOSTLE TO THE COLOSSIANS", "THE FIRST EPISTLE OF PAUL THE APOSTLE TO THE THESSALONIANS", "THE SECOND EPISTLE OF PAUL THE APOSTLE TO THE THESSALONIANS", "THE FIRST EPISTLE OF PAUL THE APOSTLE TO TIMOTHY", "THE SECOND EPISTLE OF PAUL THE APOSTLE TO TIMOTHY", "THE EPISTLE OF PAUL TO TITUS", "THE EPISTLE OF PAUL TO PHILEMON", "THE EPISTLE OF PAUL THE APOSTLE TO THE HEBREWS", "THE GENERAL EPISTLE OF JAMES", "THE FIRST EPISTLE GENERAL OF PETER", "THE SECOND EPISTLE GENERAL OF PETER", "THE FIRST GENERAL EPISTLE OF JOHN", "THE SECOND EPISTLE OF JOHN", "THE THIRD EPISTLE OF JOHN", "THE GENERAL EPISTLE OF JUDE", "THE REVELATION OF SAINT JOHN THE DIVINE"];
+
 		var bibleObject; // BiblePart
 
 		//
@@ -89,7 +92,7 @@
 
 		Bible.find = function (query) {
 
-		}
+		};
 
 		/**
 		 * Gets a part of the bible
@@ -97,12 +100,8 @@
 		 * @returns {Object} The result from the query
 		 */
 		Bible.get = function (query) {
-			if (!query) {
-				return Bible.getBibleObject();
-			} else {
-				return bibleObject.get(query);
-			}
-		}
+			return bibleObject.get(query);
+		};
 
 		//
 		// Private Methods
@@ -164,10 +163,6 @@
 						verse = colonSplit[1].toUpperCase();
 					}
 
-					console.log(book);
-					console.log(chapter);
-					console.log(verse);
-
 					// Handle the 3 cases
 					if (!!book && !!chapter && !!verse) {
 						newPart = this.part[book][chapter][verse];
@@ -180,10 +175,16 @@
 						newPart = this.part[chapter][verse];
 						newLevel = getLowerLevel(newLevel);
 					}
-				} else {
+				} else {// String doesn't have string numbers
 					var key;
 					if (typeof query !== 'number') { // Clean up string if not a number
 						key = query.trim().toUpperCase();
+					} else { // query is a number
+						if (this.level === LEVEL.BIBLE) { // Get the right number book of the bible
+							key = BOOK_ORDER[query - 1];
+						} else { // handle the number like a normal key
+							key = query + '';
+						}
 					}
 					newPart = this.part[key];
 				}
