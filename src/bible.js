@@ -1,7 +1,8 @@
 /**
  * BibleJS
  *
- * Get, search, filter the bible
+ * Get, search, filter the bible (with fuzzy searching)
+ * Bible results are wrapped in a class with helper methods
  *
  * @author Grant Timmerman
  * @copyright M.I.T
@@ -10,17 +11,26 @@
  * Bible()
  * console.log(Bible('Genesis 1:1'));
  * console.log(Bible('Genesis 1'));
+ * console.log(Bible('Genesis 1')());
+ * console.log(Bible('Genesis 1').get());
  * console.log(Bible.getBibleObject());
  * console.log(Bible.find('God'));
  * console.log(Bible.find('God', 20));
+ * console.log(Bible.get());
  * console.log(Bible.get(1));
+ * console.log(Bible.get('Genesis 1:1'));
  * console.log(Bible.get('Genesis').get(1).get(1));
  * console.log(Bible.get('Genesis').get('1:1'));
  */
 (function() {
-	var BIBLE_URL = 'bible.json';
+	var BIBLE_URL = '/src/bible.json';
 	if (!window.Bible) {
-		var bibleObject;
+
+		//
+		// Private fields
+		//
+
+		var bibleObject; // BiblePart
 
 		//
 		// Public Methods
@@ -40,9 +50,9 @@
 			} else { // Query bible
 				if (!Bible.isLoaded()) {
 					throwBibleNotLoadedError();
+				} else {
+					return getQueryResult(param);
 				}
-
-				return getQueryResult(param);
 			}
 		};
 
@@ -52,7 +62,7 @@
 		 */
 		Bible.load = function (callback) {
 			$.getJSON(BIBLE_URL, function (bible) {
-				bibleObject = bible;
+				bibleObject = new BiblePart(bible);
 				if (typeof callback === 'function') {
 					callback();
 				}
@@ -81,13 +91,38 @@
 			}
 		}
 
+		Bible.find = function (query) {
+
+		}
+
+		/**
+		 * Gets a part of the bible
+		 * @param {String} query The query to get
+		 * @returns {Object} The result from the query
+		 */
+		Bible.get = function (query) {
+			if (!query) {
+				return Bible.getBibleObject();
+			} else {
+				getQueryResult(query);
+			}
+		}
+
 		//
 		// Private Methods
 		//
 
+		/**
+		 * Gets the result from a generic query
+		 * @param {[type]} query [description]
+		 * @returns {[type]} [description]
+		 */
 		function getQueryResult (query) {
-			console.log(query);
-			console.log(bibleObject);
+			if (hasNumbers(query)) {
+				//Get specific section
+			} else {
+				//Get generic book
+			}
 		}
 
 		// Errors
@@ -95,6 +130,26 @@
 		function throwBibleNotLoadedError () {
 			throw Error('Bible not loaded');
 		}
+
+		//
+		// Public Methods (BiblePart)
+		//
+
+		var BiblePart = function(part) {
+			this.part = part;
+		};
+
+		BiblePart.prototype = {
+			list: function() {
+				for (var i in this.part) {
+					//
+				}
+			},
+			count: function() {
+				return this.part.length;
+			}
+		};
+
 
 		// Expose Bible
 		window.Bible = Bible;
@@ -118,4 +173,8 @@ function run() {
 	console.log("console.log(Bible.get('Genesis').get('1:1'))");
 	console.log(Bible.get('Genesis').get('1:1'));
 }
-Bible(run);
+// Bible(run);
+
+Bible(function() {
+	console.log(Bible.get());
+});
