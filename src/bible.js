@@ -30,6 +30,8 @@
 		// Private fields
 		//
 
+		var DEFAULT_FIND_LIMIT = 10;
+
 		// The level of the bible part
 		var LEVEL = {
 			BIBLE: 'BIBLE',
@@ -90,8 +92,8 @@
 			return !!bibleObject;
 		};
 
-		Bible.find = function (query) {
-
+		Bible.find = function (query, limit) {
+			return bibleObject.find(query, limit);
 		};
 
 		/**
@@ -169,18 +171,22 @@
 
 					book = query.substring(0, query.length - lastPart.length - 1).toUpperCase();
 					chapter = colonSplit[0].toUpperCase();
-					verse;
+					// verse;
 					if (colonSplit.length > 1) {
 						verse = colonSplit[1].toUpperCase();
 					}
 
-					// Handle the 3 cases
+					// Handle cases
 					if (!!book && !!chapter && !!verse) {
 						newPart = this.part[book][chapter][verse];
 					} else if (!!book && !!chapter) {
 						newPart = this.part[book][chapter];
 					} else if (!!chapter && !!verse) {
 						newPart = this.part[chapter][verse];
+					} else if (!!chapter) {
+						newPart = this.part[chapter];
+					} else if (!!verse) {
+						newPart = this.part[verse];
 					}
 				} else {// String doesn't have string numbers
 					var key;
@@ -258,8 +264,40 @@
 			length: function() {
 				return Object.keys(this.part).length;
 			},
-			find: function() {
+			find: function(query, limit) {
+				if (!limit) {
+					limit = DEFAULT_FIND_LIMIT;
+				}
+				var results = [];
+				var keys;
+				if (this.level === LEVEL.CHAPTER) {
+					keys = Object.keys(this.part);
+					for (var i in keys) {
+						var verseIndex = keys[i];
+						var verse = this.part[verseIndex];
+						if (verse.indexOf(query) !== -1) {
+							results.push(this.get(verseIndex));
+							--limit;
+							if (!limit) {
+								return results;
+							}
+						}
+					}
+				} else if (this.level === LEVEL.BOOK || this.level === LEVEL.BIBLE) {
+					keys = Object.keys(this.part);
+					for (var i in keys) {
+						var lowerKey = keys[i];
+						var subResults = this.get(lowerKey).find(query, limit);
+						results = results.concat(subResults);
 
+						var numFound = subResults.length;
+						limit -= numFound;
+						if (!limit) {
+							return results;
+						}
+					}
+				}
+				return results;
 			}
 		};
 
@@ -267,27 +305,31 @@
 		window.Bible = Bible;
 	}
 })();
+
 function run() {
-	console.log("console.log(Bible('Genesis 1:1'))");
-	console.log(Bible('Genesis 1:1'));
+	// console.log("console.log(Bible('Genesis 1:1'))");
+	// console.log(Bible('Genesis 1:1'));
 
-	console.log("console.log(Bible('Genesis 1'))");
-	console.log(Bible('Genesis 1'));
+	// console.log("console.log(Bible('Genesis 1'))");
+	// console.log(Bible('Genesis 1'));
 
-	console.log("console.log(Bible.find('God'))");
-	console.log(Bible.find('God'));
+	// console.log("console.log(Bible.find('God'))");
+	// console.log(Bible.find('God'));
 
-	console.log("console.log(Bible.find('God', 20))");
-	console.log(Bible.find('God', 20));
+	console.log("console.log(Bible.get('genesis').find('God'))");
+	console.log(Bible.get('genesis').find('man'));
 
-	console.log("console.log(Bible.get(1))");
-	console.log(Bible.get(1));
+	// console.log("console.log(Bible.find('God', 20))");
+	// console.log(Bible.find('God', 20));
 
-	console.log("console.log(Bible.get('Genesis').get(1).get(1))");
-	console.log(Bible.get('Genesis').get(1).get(1));
+	// console.log("console.log(Bible.get(1))");
+	// console.log(Bible.get(1));
 
-	console.log("console.log(Bible.get('Genesis').get('1:1'))");
-	console.log(Bible.get('Genesis').get('1:1'));
+	// console.log("console.log(Bible.get('Genesis').get(1).get(1))");
+	// console.log(Bible.get('Genesis').get(1).get(1));
+
+	// console.log("console.log(Bible.get('Genesis').get('1:1'))");
+	// console.log(Bible.get('Genesis').get('1:1'));
 }
 // Bible(run);
 
